@@ -56,12 +56,41 @@ $app->get('/predict/{team1}/{team2}', function() use ($app){
     }
     $teamGoodness = array();
     foreach ($games as $game){ //this feels wrong
-        //divide team weight by each other, then multilply by score and add to goodness.
-        $teamGoodness[$game->team1_id] += $game->score1 * ($teamWeightByScore[$game->team1_id] / $teamWeightByScore[$game->team2_id]);
-        $teamGoodness[$game->team2_id] += $game->score2 * ($teamWeightByScore[$game->team2_id] / $teamWeightByScore[$game->team1_id]);
+        // Divide team weight by each other, then multilply by score and add to goodness. We want to add the smaller number.
+        // A high scoring team vs a low scoring team is less valuable than two high scoring teams.
+        if($teamWeightByScore[$game->team1_id] > $teamWeightByScore[$game->team2_id]){
+            $teamGoodness[$game->team2_id] += ($teamWeightByScore[$game->team2_id] * ($game->score2 * ($teamWeightByScore[$game->team2_id] / $teamWeightByScore[$game->team1_id])));
+        } elseif($game->score1 == $game->score2){
+            continue;
+        }
+        else{
+            $teamGoodness[$game->team1_id] += ($teamWeightByScore[$game->team1_id] * ($game->score1 * ($teamWeightByScore[$game->team1_id] / $teamWeightByScore[$game->team2_id])));
+        }
     }
-    //now we predict.
-    echo json_encode($teamGoodness);
+    //let's predict the season with these numbers.
+    $victor = array();
+    $numCorrect = 0;
+    foreach($games as $game){
+        $correct = false;
+        if($game->score1 == $game->score2){
+            $winner = 0;
+        } else{
+            $winner = $game->score1 < $game->score2 ? $game->team2_id : $game->team1_id;
+        }
+
+        if($game->score1 != $game->score2){
+            $pwinner = $teamGoodness[$game->team1_id] < $teamGoodness[$game->team2_id] ? $game->team2_id : $game->team1_id;
+        } else{
+            $pwinner = 0;
+        }
+        if($pwinner == $winner){
+            $correct = true;
+            $numCorrect++;
+        }
+        $victor[] = array(array("prediction" => $pwinner, "actual" => $winner, "correct" => $correct), "numCorrect" => $numCorrect);
+    }
+
+    echo json_encode($victor);
 });
 
 $app->handle();

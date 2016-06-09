@@ -84,6 +84,20 @@ $app->get('/predict/{team1}/{team2}', function($team1, $team2) use ($app) {
     echo json_encode(array("teams" => array("team1" => $teamIDNames[$team1], "team2" => $teamIDNames[$team2]), "winner" => $winner));
 });
 
+$app->get('/teams', function() use ($app){
+    $app->response->setHeader("Content-Type", "application/json");
+    $teams = Teams::find(
+        array(
+            "order" => "title"
+        )
+    );
+    $teamNames = array();
+    foreach($teams as $team){
+        $teamNames[] = $team->title;
+    }
+    echo json_encode($teamNames);
+});
+
 function getTeamGoodness(){
     $teams = Teams::find();
 //    $phql = "SELECT * FROM Teams";

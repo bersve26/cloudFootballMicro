@@ -62,7 +62,7 @@ $app->get('/predict', function() use ($app){
             $correct = true;
             $numCorrect++;
         }
-        $victor[] = array(array("prediction" => $pwinner, "actual" => $winner, "correct" => $correct), "numCorrect" => $numCorrect);
+        $victor[] = array(array("results" => array("prediction" => $pwinner, "actual" => $winner, "correct" => $correct), "numCorrect" => $numCorrect));
     }
 
     echo json_encode($victor);
@@ -81,11 +81,13 @@ $app->get('/predict/{team1}/{team2}', function($team1, $team2) use ($app) {
         $teamIDNames[$team->id] = $team->title;
     }
     $winner = $goodness[$team1] < $goodness[$team2] ? $teamIDNames[$team2] : $teamIDNames[$team1];
-    echo json_encode(array("teams" => array("team1" => $teamIDNames[$team1], "team2" => $teamIDNames[$team2]), "winner" => $winner));
+    echo json_encode(array("results" => array("teams" => array("team1" => $teamIDNames[$team1], "team2" => $teamIDNames[$team2]), "winner" => $winner)));
 });
 
 $app->get('/teams', function() use ($app){
     $app->response->setHeader("Content-Type", "application/json");
+    $app->response->setHeader("Access-Control-Allow-Origin", "*");
+    header('Access-Control-Allow-Origin: *');
     $teams = Teams::find(
         array(
             "order" => "title"
@@ -93,9 +95,10 @@ $app->get('/teams', function() use ($app){
     );
     $teamNames = array();
     foreach($teams as $team){
-        $teamNames[] = $team->title;
+        $teamNames[] = array("id" => $team->id, "name" => $team->title);
     }
-    echo json_encode($teamNames);
+    $results = array("results" => $teamNames);
+    echo json_encode($results);
 });
 
 function getTeamGoodness(){
